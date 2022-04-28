@@ -1,11 +1,15 @@
 import './App.css';
 import React, { useEffect, useState } from "react";
-import Weather from './components/weather';
+import Weather from './components/Weather';
+import { WeatherDay } from './components/WeatherDay';
+
 export default function App() {
   
   const [lat, setLat] = useState([]);
   const [long, setLong] = useState([]);
   const [data, setData] = useState([]);
+
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -20,10 +24,13 @@ export default function App() {
         setData(result)
         console.log(result);
       });
+
+     
     }
     fetchData();
   }, [lat,long])
-  
+
+    
   return (
     <div className="App">
       {(typeof data.main != 'undefined') ? (
@@ -34,4 +41,5 @@ export default function App() {
       
     </div>
   );
+  
 }
