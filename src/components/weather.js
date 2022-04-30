@@ -1,33 +1,42 @@
 import React from "react";
-import Card from "react-bootstrap/Card";
+import "./weather.style.css";
 
-import moment from "moment";
+const Weather = props => {
+  return (
+    <div className="container text-light">
+      <div className="Card">
+        <h1 className="text-white py-3">{props.cityname}</h1>
+        <h5 className="py-4">
+          <i className={`wi ${props.weatherIcon} display-1`} />
+        </h5>
 
-const weatherCard = ({ weatherData }) => (
-  <Card style={{ width: "18rem" }}>
-    <Card.Body>
-      <Card.Title>Card Title</Card.Title>
-      <Card.Text>
-        <p>City: {weatherData.name}</p>
-        {}
-        <p>Temperature: {weatherData.main.temp}ºC</p>
-        <p>Wind Speed: {weatherData.wind.speed}m/s</p>
-        <p>Humidity: {weatherData.main.humidity}%</p>       
-        <p>
-          Sunrise:{" "}
-          {new Date(weatherData.sys.sunrise * 1000).toLocaleTimeString("en-IN")}
-        </p>
-        <p>
-          Sunset:{" "}
-          {new Date(weatherData.sys.sunset * 1000).toLocaleTimeString("en-IN")}
-        </p>
-        <p>Day: {moment().format("dddd")}</p>
-        <p>Date: {moment().format("LL")}</p>
-        
-             
-      </Card.Text>
-    </Card.Body>
-  </Card>
-);
+        {/* Get Celsius */}
+        {props.temp_celsius ? (
+          <h1 className="py-2">{props.temp_celsius}&deg;</h1>
+        ) : null}
 
-export default weatherCard;
+        {/* show max and min temp */}
+        {maxminTemp(props.temp_min, props.temp_max)}
+
+        {/* Weather description */}
+        <h4 className="py-3">
+          {props.description.charAt(0).toUpperCase() +
+            props.description.slice(1)}
+        </h4>
+      </div>
+    </div>
+  );
+};
+
+export default Weather;
+
+function maxminTemp(min, max) {
+  if (max && min) {
+    return (
+      <h3>
+        <span className="px-4">{min}&deg;</span>
+        <span className="px-4">{max}&deg;</span>
+      </h3>
+    );
+  }
+}

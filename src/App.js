@@ -1,81 +1,119 @@
+import React from "react";
 import "./App.css";
-import React, { useEffect, useState } from "react";
+import Form from "./components/Form";
 import Weather from "./components/Weather";
-import { Forecast } from "./components/Forecast";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "weather-icons/css/weather-icons.css";
 
-export default function App() {
-  const [lat, setLat] = useState([]);
-  const [long, setLong] = useState([]);
-  const [data, setData] = useState([]);
 
-  const [weatherForecast, setWeatherForecast] = useState();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      navigator.geolocation.getCurrentPosition(function (position) {
-        setLat(position.coords.latitude);
-        setLong(position.coords.longitude);
-      });
-
-      fetch(
-        `${process.env.REACT_APP_API_URL}/weather/?lat=${lat}&lon=${long}&units=metric&appid=${process.env.REACT_APP_API_KEY}`
-      )
-        .then((res) => res.json())
-        .then((result) => {
-          setData(result);
-          console.log(result);
-        });
+class App extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      city: undefined,      
+      icon: undefined,
+      main: undefined,
+      celsius: undefined,
+      temp_max: null,
+      temp_min: null,
+      description: "",
+      error: false
     };
-    fetchData();
-  }, [lat, long]);
 
-  useEffect(() => {
-    fetch(
-      `${process.env.REACT_APP_API_URL}/onecall?lat=${lat}&lon=${long}&exclude=current,minutely,hourly,alerts&appid=${process.env.REACT_APP_API_KEY}`
-    )
-      .then(res => res.json())
-      .then(res => {
-      console.log(res);
-        setWeatherForecast(
-          res.weatherForecast
-          .map((wf) => {
-            return {
-              min: wf.weatherForecast.daily.temp.min.Value,
-              max: wf.weatherForecast.daily.temp.max.Value,
-              description: wf.weatherForecast.daily.weather.icon,
-            }
-          }))
+    this.weatherIcon = {
+      Thunderstorm: "wi-thunderstorm",
+      Drizzle: "wi-sleet",
+      Rain: "wi-storm-showers",
+      Snow: "wi-snow",
+      Atmosphere: "wi-fog",
+      Clear: "wi-day-sunny",
+      Clouds: "wi-day-fog"
+    };
+  }
+
+  get_WeatherIcon(icons, rangeId) {
+    switch (true) {
+      case rangeId >= 200 && rangeId < 232:
+        this.setState({ icon: icons.Thunderstorm });
+        break;
+      case rangeId >= 300 && rangeId <= 321:
+        this.setState({ icon: icons.Drizzle });
+        break;
+      case rangeId >= 500 && rangeId <= 521:
+        this.setState({ icon: icons.Rain });
+        break;
+      case rangeId >= 600 && rangeId <= 622:
+        this.setState({ icon: icons.Snow });
+        break;
+      case rangeId >= 701 && rangeId <= 781:
+        this.setState({ icon: icons.Atmosphere });
+        break;
+      case rangeId === 800:
+        this.setState({ icon: icons.Clear });
+        break;
+      case rangeId >= 801 && rangeId <= 804:
+        this.setState({ icon: icons.Clouds });
+        break;
+      default:
+        this.setState({ icon: icons.Clouds });
+    }
+  }
+
+  calCelsius(temp) {
+    let cell = Math.floor(temp - 273.15);
+    return cell;
+  }
+
+  getWeather = async e => {
+    e.preventDefault();
+
+    
+    const city = e.target.elements.city.value;
+
+    if (city) {
+      const api_call = await fetch(
+        `${process.env.REACT_APP_API_URL}/weather?q=${city}&appid=${process.env.REACT_APP_API_KEY}`
+      );
+
+      const response = await api_call.json();
+
+      this.setState({
+        city: `${response.name}`,        
+        main: response.weather[0].main,
+        celsius: this.calCelsius(response.main.temp),
+        temp_max: this.calCelsius(response.main.temp_max),
+        temp_min: this.calCelsius(response.main.temp_min),
+        description: response.weather[0].description,
+        error: false
       });
-      
-  }, []);
 
-  useEffect(() => {
-    console.log(weatherForecast);
-  }, [weatherForecast]);
+      // seting icons
+      this.get_WeatherIcon(this.weatherIcon, response.weather[0].id);
 
-  return (
-    (
-      <div>
-        {!!weatherForecast &&
-          weatherForecast.map((i, index) => (
-            <div key={index}>
-              <weatherForecast
-                min={i.min}
-                max={i.max}
-                description={i.description}
-              />
-            </div>
-          ))}
-      </div>
-    ),
-    (
+      console.log(response);
+    } else {
+      this.setState({
+        error: true
+      });
+    }
+  };
+
+  render() {
+    return (
       <div className="App">
-        {typeof data.main != "undefined" ? (
-          <Weather weatherData={data} />
-        ) : (
-          <div></div>
-        )}
+        <Form loadweather={this.getWeather} error={this.state.error} />
+        <Weather
+          cityname={this.state.city}
+          weatherIcon={this.state.icon}
+          temp_celsius={this.state.celsius}
+          temp_max={this.state.temp_max}
+          temp_min={this.state.temp_min}
+          description={this.state.description}
+        />
       </div>
-    )
-  );
+    );
+  }
 }
+
+export default App;
+
