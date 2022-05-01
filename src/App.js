@@ -1,9 +1,10 @@
-import React from "react";
+import React, {useState, useEffect} from "react";
 import "./App.css";
 import Form from "./components/Form";
 import Weather from "./components/Weather";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "weather-icons/css/weather-icons.css";
+import Forecast from "./components/Forecast";
 
 
 class App extends React.Component {
@@ -14,12 +15,13 @@ class App extends React.Component {
       icon: undefined,
       main: undefined,
       celsius: undefined,
-      temp_max: null,
-      temp_min: null,
-      description: "",
+      windSpeed: undefined,
+      humidity: undefined,      
+      description: ' ',
       error: false
     };
 
+    
     this.weatherIcon = {
       Thunderstorm: "wi-thunderstorm",
       Drizzle: "wi-sleet",
@@ -81,16 +83,16 @@ class App extends React.Component {
         city: `${response.name}`,        
         main: response.weather[0].main,
         celsius: this.calCelsius(response.main.temp),
-        temp_max: this.calCelsius(response.main.temp_max),
-        temp_min: this.calCelsius(response.main.temp_min),
+        windSpeed: response.wind.speed,
+        humidity: response.main.humidity,
         description: response.weather[0].description,
         error: false
       });
-
+      
       // seting icons
       this.get_WeatherIcon(this.weatherIcon, response.weather[0].id);
 
-      console.log(response);
+
     } else {
       this.setState({
         error: true
@@ -106,14 +108,20 @@ class App extends React.Component {
           cityname={this.state.city}
           weatherIcon={this.state.icon}
           temp_celsius={this.state.celsius}
-          temp_max={this.state.temp_max}
-          temp_min={this.state.temp_min}
+          windSpeed={this.state.windSpeed}
+          humidity={this.state.humidity}
           description={this.state.description}
+                   
         />
+        
       </div>
     );
   }
+  
 }
 
+
 export default App;
+
+
 
