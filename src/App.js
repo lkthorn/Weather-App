@@ -1,127 +1,220 @@
-import React, {useState, useEffect} from "react";
 import "./App.css";
-import Form from "./components/Form";
-import Weather from "./components/Weather";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "weather-icons/css/weather-icons.css";
-import Forecast from "./components/Forecast";
+import React, { useEffect, useState } from "react";
+import Cards, { Card } from "react-bootstrap";
 
+const API_URL = "https://api.openweathermap.org/data/2.5/onecall?";
+const API_KEY = "4131a8473c96bf0edf5cb380a0d4a326";
+//Parameters
+let city = null;
+let currentWeather = null;
+let currentTemp = null;
+let sunrise = null;
+let sunset = null;
+let currentHumidity = null;
+let currentWind = null;
+let daily = {};
+let measure = "°C";
+let distanceTime = "m/s";
 
-class App extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      city: undefined,      
-      icon: undefined,
-      main: undefined,
-      celsius: undefined,
-      windSpeed: undefined,
-      humidity: undefined,      
-      description: ' ',
-      error: false
-    };
-
-    
-    this.weatherIcon = {
-      Thunderstorm: "wi-thunderstorm",
-      Drizzle: "wi-sleet",
-      Rain: "wi-storm-showers",
-      Snow: "wi-snow",
-      Atmosphere: "wi-fog",
-      Clear: "wi-day-sunny",
-      Clouds: "wi-day-fog"
-    };
+const createApi = ({ lon, lat }) => {
+  if (measure == "°C") {
+    return `${API_URL}lat=${lat}&lon=${lon}&exclude=minutely&units=metric&appid=${API_KEY}`;
+  } else {
+    return `${API_URL}lat=${lat}&lon=${lon}&exclude=minutely&units=imperial&appid=${API_KEY}`;
   }
+};
 
-  get_WeatherIcon(icons, rangeId) {
-    switch (true) {
-      case rangeId >= 200 && rangeId < 232:
-        this.setState({ icon: icons.Thunderstorm });
-        break;
-      case rangeId >= 300 && rangeId <= 321:
-        this.setState({ icon: icons.Drizzle });
-        break;
-      case rangeId >= 500 && rangeId <= 521:
-        this.setState({ icon: icons.Rain });
-        break;
-      case rangeId >= 600 && rangeId <= 622:
-        this.setState({ icon: icons.Snow });
-        break;
-      case rangeId >= 701 && rangeId <= 781:
-        this.setState({ icon: icons.Atmosphere });
-        break;
-      case rangeId === 800:
-        this.setState({ icon: icons.Clear });
-        break;
-      case rangeId >= 801 && rangeId <= 804:
-        this.setState({ icon: icons.Clouds });
-        break;
-      default:
-        this.setState({ icon: icons.Clouds });
-    }
-  }
-
-  calCelsius(temp) {
-    let cell = Math.floor(temp - 273.15);
-    return cell;
-  }
-
-  getWeather = async e => {
-    e.preventDefault();
-
-    
-    const city = e.target.elements.city.value;
-
-    if (city) {
-      const api_call = await fetch(
-        `${process.env.REACT_APP_API_URL}/weather?q=${city}&appid=${process.env.REACT_APP_API_KEY}`
+const getCoords = () => {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) =>
+        resolve({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        })
       );
-
-      const response = await api_call.json();
-
-      this.setState({
-        city: `${response.name}`,        
-        main: response.weather[0].main,
-        celsius: this.calCelsius(response.main.temp),
-        windSpeed: response.wind.speed,
-        humidity: response.main.humidity,
-        description: response.weather[0].description,
-        error: false
-      });
-      
-      // seting icons
-      this.get_WeatherIcon(this.weatherIcon, response.weather[0].id);
-
-
     } else {
-      this.setState({
-        error: true
-      });
+      reject("Could not find you location");
     }
+  });
+};
+
+const toJSON = (response) => response.json();
+
+const getWeatherData = (setWeather) =>
+  getCoords().then(createApi).then(fetch).then(toJSON).then(setWeather);
+
+const timeTraslate = (epoch) => {
+  let date = new Date(epoch * 1000);
+  let hour = date.getHours();
+  let minute = date.getMinutes();
+  if (minute < 10) {
+    minute = `0${minute}`;
+  }
+  if (hour < 10) {
+    hour = `0${hour}`;
+  }
+  return `${hour}:${minute}`;
+};
+
+const timeTrim = (weatherHourly) => {
+  for (let i = 0; i < 23; i++) {
+    if (timeTraslate(weatherHourly[i].date) == "00:00") {
+      return i;
+    }
+  }
+};
+
+const dayTranslate = (epoch) => {
+  let newDate = new Date(epoch * 1000);
+  switch (newDate.getDay()) {
+    case 1:
+      return "Monday";
+    case 2:
+      return "Tuesday";
+    case 3:
+      return "Wednesday";
+    case 4:
+      return "Thursday";
+    case 5:
+      return "Friday";
+    case 6:
+      return "Saturday";
+    case 0:
+      return "Sunday";
+    default:
+      return "error";
+  }
+};
+
+function App() {
+  const [weather, setWeather] = useState({});
+  const [hourly, setHourly] = useState({});
+
+  useEffect(() => {
+    getWeatherData(setWeather);
+  }, [getWeatherData]);
+
+  useEffect(() => {
+    if (weather.timezone) {
+      city = weather.timezone.slice(7);
+      currentWeather = weather.current.weather[0].description;
+      currentTemp = Math.floor(weather.current.temp);
+      sunrise = timeTraslate(weather.current.sunrise);
+      sunset = timeTraslate(weather.current.sunset);
+      currentWind = weather.current.wind_speed;
+      currentHumidity = weather.current.humidity;
+      daily = weather.daily.slice(1, 6);
+      setHourly(weather.hourly.slice(0, timeTrim(weather.hourly)));
+    } else {
+      city = "Could not get weather";
+    }
+  }, [weather]);
+
+  const convert = () => {
+    if (measure == "°F") {
+      measure = "°C";
+      distanceTime = "m/s";
+    } else {
+      measure = "°F";
+      distanceTime = "mph";
+    }
+    getWeatherData(setWeather);
   };
 
-  render() {
-    return (
-      <div className="App">
-        <Form loadweather={this.getWeather} error={this.state.error} />
-        <Weather
-          cityname={this.state.city}
-          weatherIcon={this.state.icon}
-          temp_celsius={this.state.celsius}
-          windSpeed={this.state.windSpeed}
-          humidity={this.state.humidity}
-          description={this.state.description}
-                   
-        />
-        
+  return (
+    <div className="container">
+      <div className="card">
+        <div className="row">
+          <div className="col-9 left">
+            <div className="row top">
+              <h1 className="col">{city}</h1>
+              <button
+                className="col"
+                onClick={() => {
+                  convert();
+                }}
+              >
+                Celsius / Fahrenheit{" "}
+              </button>
+            </div>
+
+            <div className="row top">
+              <h3 className="col-7 temp">
+                {currentTemp}
+                {measure}
+              </h3>
+              <h3 className="col">{currentWeather}</h3>
+            </div>
+            <div className="row">
+              <div className="col border">
+                <p>
+                  <i class="col" title="wind"></i>Wind: {currentWind}
+                  {distanceTime}
+                </p>
+                <p>
+                  <i class="col" aria-hidden="true"></i>Humidity:{" "}
+                  {currentHumidity}%
+                </p>
+                <p>Sunrise at: {sunrise}</p>
+                <p>Sunset at: {sunset}</p>
+              </div>
+            </div>
+
+            <div className="col-3 right">
+              <h3 className="row top">Today's Forecast</h3>
+              <div className="hourly">
+                {hourly.map &&
+                  hourly.map((hour) => (
+                    <div>
+                      <p className="row">
+                        {timeTraslate(hour.dt)}
+                      </p>
+                      <p className="col">
+                        {Math.floor(hour.temp)}
+                        {measure}
+                      </p>
+                      <p className="col"></p>
+                      <p className="col">
+                        {hour.wind_speed}
+                        {distanceTime}
+                      </p>
+                      <p className="col">
+                        <i class="fa fa-tint" aria-hidden="true"></i>
+                        {hour.humidity}%
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="row bottom">
+            <div className="col">
+              <h2 className="col border">5 days forecast</h2>
+              <div className="col">
+                {daily.map &&
+                  daily.map((day) => (
+                    <div className="row">
+                      <p className="row">
+                        <b>{dayTranslate(day.dt)}</b>
+                      </p>
+                      <p className="row">{day.weather[0].main}</p>
+                      <p className="row">
+                        {Math.floor(day.temp.max)}
+                        {measure} / {Math.floor(day.temp.min)}
+                        {measure}
+                      </p>
+                      <p className="row"></p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    );
-  }
-  
+    </div>
+  );
 }
 
-
 export default App;
-
-
-
