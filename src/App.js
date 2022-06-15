@@ -1,6 +1,7 @@
 import "./App.css";
 import React, { useEffect, useState } from "react";
-import Cards, { Card } from "react-bootstrap";
+import { Button, Card, Container, Row, Col, ListGroup } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_URL = "https://api.openweathermap.org/data/2.5/onecall?";
 const API_KEY = "4131a8473c96bf0edf5cb380a0d4a326";
@@ -17,7 +18,7 @@ let measure = "°C";
 let distanceTime = "m/s";
 
 const createApi = ({ lon, lat }) => {
-  if (measure == "°C") {
+  if (measure === "°C") {
     return `${API_URL}lat=${lat}&lon=${lon}&exclude=minutely&units=metric&appid=${API_KEY}`;
   } else {
     return `${API_URL}lat=${lat}&lon=${lon}&exclude=minutely&units=imperial&appid=${API_KEY}`;
@@ -59,7 +60,7 @@ const timeTraslate = (epoch) => {
 
 const timeTrim = (weatherHourly) => {
   for (let i = 0; i < 23; i++) {
-    if (timeTraslate(weatherHourly[i].date) == "00:00") {
+    if (timeTraslate(weatherHourly[i].date) === "00:00") {
       return i;
     }
   }
@@ -93,7 +94,7 @@ function App() {
 
   useEffect(() => {
     getWeatherData(setWeather);
-  }, [getWeatherData]);
+  }, []);
 
   useEffect(() => {
     if (weather.timezone) {
@@ -112,7 +113,7 @@ function App() {
   }, [weather]);
 
   const convert = () => {
-    if (measure == "°F") {
+    if (measure === "°F") {
       measure = "°C";
       distanceTime = "m/s";
     } else {
@@ -123,96 +124,125 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="row">
-          <div className="col-9 left">
-            <div className="row top">
-              <h1 className="col">{city}</h1>
-              <button
-                className="col"
-                onClick={() => {
-                  convert();
-                }}
-              >
-                Celsius / Fahrenheit{" "}
-              </button>
-            </div>
+    <div className="App">
+      <Container>
+        <Card className="my-3">
+          <div className="switchOn">
+            <Row className="text-center">
+              <h1>{city}</h1>
+            </Row>
 
-            <div className="row top">
-              <h3 className="col-7 temp">
-                {currentTemp}
-                {measure}
-              </h3>
-              <h3 className="col">{currentWeather}</h3>
-            </div>
-            <div className="row">
-              <div className="col border">
-                <p>
-                  <i class="col" title="wind"></i>Wind: {currentWind}
-                  {distanceTime}
-                </p>
-                <p>
-                  <i class="col" aria-hidden="true"></i>Humidity:{" "}
-                  {currentHumidity}%
-                </p>
-                <p>Sunrise at: {sunrise}</p>
-                <p>Sunset at: {sunset}</p>
-              </div>
-            </div>
-
-            <div className="col-3 right">
-              <h3 className="row top">Today's Forecast</h3>
-              <div className="hourly">
-                {hourly.map &&
-                  hourly.map((hour) => (
-                    <div>
-                      <p className="row">
-                        {timeTraslate(hour.dt)}
-                      </p>
-                      <p className="col">
-                        {Math.floor(hour.temp)}
-                        {measure}
-                      </p>
-                      <p className="col"></p>
-                      <p className="col">
-                        {hour.wind_speed}
-                        {distanceTime}
-                      </p>
-                      <p className="col">
-                        <i class="fa fa-tint" aria-hidden="true"></i>
-                        {hour.humidity}%
-                      </p>
-                    </div>
-                  ))}
-              </div>
-            </div>
+            <Row>
+              
+              <Col className="mx-5">
+                <h3>{currentWeather}</h3>
+                <h3>
+                  {currentTemp}
+                  {measure}
+                </h3>
+              </Col>
+              <Col>
+                <Button
+                  className="position-relative squared mx-3 p-3"
+                  variant="secondary"
+                  onClick={() => {
+                    convert();
+                  }}
+                >
+                  Change Units
+                </Button>
+              </Col>
+            </Row>
           </div>
+          
+          <Row className="justify-content-md-center mx-3 py-3">
+            
+              
+                <Col>
+                  <i title="wind"></i>Wind: {currentWind}
+                  {distanceTime}
+                </Col>
+                <Col>
+                  <i aria-hidden="true"></i>Humidity: {currentHumidity}%
+                </Col>
+                <Col>Sunrise at: {sunrise}</Col>
+                <Col>Sunset at: {sunset}</Col>
+              
+            
+          </Row>
+        </Card>
 
-          <div className="row bottom">
-            <div className="col">
-              <h2 className="col border">5 days forecast</h2>
-              <div className="col">
+        <Card className="mb-3">
+          <h3 className="col text-center py-2 px-4">Today's Forecast</h3>
+          <div className="col text-center px-4">
+            <Row className="justify-content-md-center">
+              {hourly.map &&
+                hourly.map((hour) => (
+                  <div>
+                    <ListGroup horizontal>
+                      <Col xs lg="2">
+                        <p>{timeTraslate(hour.dt)}</p>
+                      </Col>
+                      <Col>
+                        <p>
+                          {Math.floor(hour.temp)}
+                          {measure}
+                        </p>
+                      </Col>
+                      <Col>
+                        <p>
+                          {hour.wind_speed}
+                          {distanceTime}
+                        </p>
+                      </Col>
+                      <Col>
+                        <p>
+                          <i aria-hidden="true"></i>
+                          {hour.humidity}%
+                        </p>
+                      </Col>
+                    </ListGroup>
+                  </div>
+                ))}
+            </Row>
+          </div>
+        </Card>
+
+        <Card className="mb-3">
+          <h3 className="col text-center py-2 px-4">5 Days Forecast</h3>
+          <div className="col text-center py-4 px-4">
+            <Row className="justify-content-md-center">
+              <div>
                 {daily.map &&
                   daily.map((day) => (
-                    <div className="row">
-                      <p className="row">
-                        <b>{dayTranslate(day.dt)}</b>
-                      </p>
-                      <p className="row">{day.weather[0].main}</p>
-                      <p className="row">
-                        {Math.floor(day.temp.max)}
-                        {measure} / {Math.floor(day.temp.min)}
-                        {measure}
-                      </p>
-                      <p className="row"></p>
+                    <div>
+                      <ListGroup horizontal>
+                        <Col>
+                          <p>
+                            <b>{dayTranslate(day.dt)}</b>
+                          </p>
+                        </Col>
+                        <Col>
+                          <p>{day.weather[0].main}</p>
+                        </Col>
+                        <Col>
+                          <p>
+                            {Math.floor(day.temp.max)}
+                            {measure} / {Math.floor(day.temp.min)}
+                            {measure}
+                          </p>
+                        </Col>
+                        <Col>
+                          <p></p>
+                        </Col>
+                      </ListGroup>
                     </div>
                   ))}
               </div>
-            </div>
+            </Row>
           </div>
-        </div>
-      </div>
+        </Card>
+      </Container>
     </div>
   );
 }
